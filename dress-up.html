@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="./rightArrow.js"></script>
+        <script src="./leftArrow.js"></script>
+    </head>
+<body>
+    <div class="selector">
+        <left-arrow id="left-face"></left-arrow>
+        <img id="face">
+        <right-arrow id="right-face"></right-arrow>
+
+    </div>
+    
+    <div class="selector">
+        <left-arrow id="left-shirt"></left-arrow>
+        <img id="shirt">
+        <right-arrow id="right-shirt"></right-arrow>
+
+    </div>
+    <div class="selector">
+        <left-arrow id="left-pants"></left-arrow>
+        <img id="pants">
+        <right-arrow id="right-pants"></right-arrow>
+
+    </div>
+
+</body>
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        padding: 12px;
+        overflow-x: hidden;
+    }
+
+    .selector {
+        display: grid;
+        grid-template-columns: clamp(40px, 12vw, 72px) minmax(0, 1fr) clamp(40px, 12vw, 72px);
+        align-items: center;
+        gap: clamp(4px, 2vw, 16px);
+        width: 100%;
+        max-width: 640px;
+        margin: 0 auto -16px;
+    }
+
+    .selector img {
+        display: block;
+        width: min(80vw, 320px);
+        max-width: 100%;
+        height: auto;
+        margin: auto;
+    }
+
+    #face {
+        width: min(45vw, 180px);
+        border-radius: 99px;;
+    }
+
+    left-arrow,
+    right-arrow {
+        display: block;
+        width: clamp(40px, 12vw, 72px);
+        height: clamp(40px, 12vw, 72px);
+    }
+
+    @media (max-width: 480px) {
+        .selector {
+            grid-template-columns: 44px minmax(0, 1fr) 44px;
+            gap: 4px;
+        }
+    }
+</style>
+
+<script>
+
+    const faceList = new Array()
+    const shirtsList = new Array()
+    shirtsList.push("./jersey.svg")
+
+    const pantsList = new Array()
+    pantsList.push("./blue_jeans.svg")
+
+    const leftFace = document.getElementById('left-face')
+    const face = document.getElementById('face')
+    const rightFace = document.getElementById('right-face')
+    let currentFace = 0
+
+    leftFace.addEventListener('click', () => {
+        currentFace = cycleImgLeft(face, currentFace, faceList)
+    })
+    rightFace.addEventListener('click', () => {
+        currentFace = cycleImgRight(face, currentFace, faceList)
+    })
+
+    const leftShirt = document.getElementById('left-shirt')
+    const shirt = document.getElementById('shirt')
+    const rightShirt = document.getElementById('right-shirt')
+    let currentShirt = 0
+
+    leftShirt.addEventListener('click', () => {
+        currentShirt = cycleImgLeft(shirt, currentShirt, shirtsList)
+    })
+    rightShirt.addEventListener('click', () => {
+        currentShirt = cycleImgRight(shirt, currentShirt, shirtsList)
+    })
+    
+    const leftPants = document.getElementById('left-pants')
+    const pants = document.getElementById('pants')
+    const rightPants = document.getElementById('right-pants')
+    let currentPants = 0
+
+    leftPants.addEventListener('click', () => {
+        currentPants = cycleImgLeft(pants, currentPants, pantsList)
+    })
+    rightPants.addEventListener('click', () => {
+        currentPants = cycleImgRight(pants, currentPants, pantsList)
+    })
+    
+    for (let i = 0; i < 10; i ++){
+        pantsList.push(`./pants/pants_${i}.svg`)
+        shirtsList.push(`./shirts/jersey_${i}.svg`)
+    }
+
+    shirt.src = shirtsList[0]
+    pants.src = pantsList[0]
+    face.src = "./blake.png"
+
+    function cycleImgLeft(img, currentImg, imgList){
+        currentImg--
+        if (currentImg < 0){
+            currentImg = imgList.length - 1
+        }
+        img.src = imgList[currentImg]
+        return currentImg
+
+    }
+
+    function cycleImgRight(img, currentImg, imgList){
+        currentImg++
+        if (currentImg >= imgList.length){
+            currentImg = 0
+        }
+        img.src = imgList[currentImg]
+        return currentImg
+
+    }
+
+
+</script>

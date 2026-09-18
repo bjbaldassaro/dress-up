@@ -1,0 +1,289 @@
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    </head>
+<body>
+
+    <div id="grid"></div>
+    <input type="color" id="colorPicker">COLOR</input>
+    <input type="checkbox" id="eraser">Eraser Mode</input>
+    <button id="createSVG">Create SVG</button>
+    <button id="clear">Clear Drawing</button>
+    <button id="loadShirtTemplate">Load T-Shirt Template</button>
+    <button id="loadPantsTemplate">Load Jeans Template</button>
+    <button id="loadJerseyTemplate">Load Jersey Template</button>
+    <button id="modifySVG">test</button>
+    <div id="downloads"></div>
+    
+
+</body>
+
+<style>
+    * {
+        user-select: none;
+        -webkit-user-drag: none;
+    }
+
+    #grid {
+        display: grid;
+        width: 544px;
+        height: 448px;
+        border-left: 1px dashed black;
+        border-top: 1px dashed black;
+    }
+    .pixel {
+        box-sizing: border-box;
+        width: 32px;
+        height: 32px;
+        border-right: 1px dashed black;
+        border-bottom: 1px dashed black;
+    }
+</style>
+<script>
+    const grid = document.getElementById("grid");
+    const color = document.getElementById('colorPicker')
+    const eraser = document.getElementById('eraser')
+    const createSVG = document.getElementById('createSVG')
+    const clearDrawing = document.getElementById('clear')
+    const modifySVG = document.getElementById('modifySVG')
+    const loadShirtTemplateButton = document.getElementById('loadShirtTemplate')
+    const loadPantsTemplateButton = document.getElementById('loadPantsTemplate')
+    const loadJerseyTemplateButton = document.getElementById('loadJerseyTemplate')
+    const downloads = document.getElementById('downloads')
+
+    const templates = [
+        {
+            name: 'Blank Tshirt',
+            path: './tshirt_blank.svg'
+        }, 
+        {
+            name: 'Blue Jeans',
+            path: './blue_jeans.svg'
+        },
+        {
+            name: 'Jersey',
+            path: './jersey.svg'
+        }
+    ]
+
+    let mousedown = false
+    const pixelDefaultColor = '#f5f5f5'
+    const gridSize = 16
+
+    const palettes = [
+        ['#264653', '#2A9D8F', '#E9C46A'], // Ocean
+        ['#606C38', '#DDA15E', '#FEFAE0'], // Earth
+        ['#3D405B', '#81B29A', '#F2CC8F'], // Sage
+        ['#6D597A', '#B56576', '#EAAC8B'], // Vintage
+        ['#023047', '#219EBC', '#FFB703'], // Sunset
+        ['#355070', '#6D597A', '#E56B6F'], // Berry
+        ['#386641', '#6A994E', '#A7C957'], // Forest
+        ['#22223B', '#4A4E69', '#C9ADA7'], // Charcoal
+        ['#FF6B6B', '#FFD166', '#06D6A0'], // Bright
+        ['#F72585', '#7209B7', '#4CC9F0']  // Neon
+    ]
+
+    // Event listeners
+    document.addEventListener('dragstart', (event) => {
+        event.preventDefault()
+    })
+    document.addEventListener('mouseup', () => {
+        mousedown = false
+    })
+
+    createSVG.addEventListener('click', () => {
+        const svg = buildSVG()
+        // transferSVG(svg)
+
+        const blob = new Blob([svg], { type: 'image/svg+xml' })
+        const url = URL.createObjectURL(blob)
+        const download = document.createElement('a')
+        download.href = url
+        download.download = 'custom.svg'
+        document.body.appendChild(download)
+        download.click()
+        download.remove()
+        URL.revokeObjectURL(url)
+    })
+
+    clearDrawing.addEventListener('click', () => {
+        clearScreen()
+    })
+
+    modifySVG.addEventListener('click', async () => {
+        downloads.innerHTML = ''
+
+        try {
+            await generateModifiedSVGList("./jersey.svg", "jersey")
+            await generateModifiedSVGList("./blue_jeans.svg", "pants")
+        }
+        catch (error) {
+            console.error('SVG generation failed:', error)
+        }
+    })
+
+    loadShirtTemplateButton.addEventListener('click', () => {
+        loadTemplate(templates[0].path)
+    })
+
+    loadPantsTemplateButton.addEventListener('click', () => {
+        loadTemplate(templates[1].path)
+    })
+    loadJerseyTemplateButton.addEventListener('click', () => {
+        loadTemplate(templates[2].path)
+    })
+
+    function buildGrid(size){
+        grid.innerHTML = ''
+        grid.style.gridTemplateColumns = `repeat(${gridSize + 1}, 1fr)`
+        grid.style.gridTemplateRows = `repeat(${gridSize - 2}, 1fr)`
+
+        for (let i = 0; i < (size + 1) * (size - 2); i++){
+            let pixel = document.createElement("div")
+            grid.appendChild(pixel)
+            pixel.classList.add("pixel")
+            pixel.style.backgroundColor = pixelDefaultColor
+            pixel.dataset.color = pixelDefaultColor
+
+            pixel.addEventListener('mouseenter', () => {
+                if (!eraser.checked){
+                    setPixelColor(pixel, color.value, mousedown)
+                }
+                else{
+                    setPixelColor(pixel, pixelDefaultColor, mousedown)
+                }
+            })
+            pixel.addEventListener('mouseleave', () => {
+                if (!mousedown) {
+                    setPixelColor(pixel, getPixelColor(pixel), false)
+                }
+            })
+            pixel.addEventListener('mousedown', () => {
+                mousedown = true
+                if (eraser.checked){
+                    setPixelColor(pixel, pixelDefaultColor, true)
+                }
+                else{setPixelColor(pixel, color.value, true)}
+            })
+        }
+
+    }
+
+    function setPixelColor(p, color, commit){
+        p.style.backgroundColor = color
+        if (commit) {p.dataset.color = color}
+    }
+    function getPixelColor(p){
+        return p.dataset.color
+    }
+
+    function buildSVG(){
+
+        let svg = `<svg width="170" height="140" viewBox="0 0 17 14" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">`
+        let pixels = grid.children
+
+        for (let x = 0; x < gridSize + 1; x++){
+            for (let y = 0; y < gridSize - 2; y++){
+                let currentColor = getPixelColor(pixels[x + (gridSize + 1) * y])
+                if (currentColor != '#f5f5f5'){
+                    svg += `<rect
+                            width="1"
+                            height="1"
+                            x="${x}"
+                            y="${y}"
+                            fill="${currentColor}"
+                            ></rect>
+                            `
+                }
+            }
+        }
+
+        svg += `</svg>`
+
+        
+        return svg
+    }
+
+    
+    function transferSVG(svg) {
+        
+        localStorage.setItem(`custom_SVG`, svg)
+
+    }
+
+    function clearScreen(){
+        let pixels = grid.children
+
+        for (let p of pixels){
+            setPixelColor(p, pixelDefaultColor, true)
+        }
+    }
+
+
+    async function loadTemplate(path) {
+        const response = await fetch(path)
+        const svgText = await response.text()
+        console.log(svgText)
+        const parser = new DOMParser()
+        const svgDocument = parser.parseFromString(svgText, 'image/svg+xml')
+
+        clearScreen()
+
+        for (const rect of svgDocument.querySelectorAll('rect')) {
+            const x = Number(rect.getAttribute('x'))
+            const y = Number(rect.getAttribute('y'))
+            const fill = rect.getAttribute('fill') || pixelDefaultColor
+            const index = x + (gridSize + 1) * y
+            const pixel = grid.children[index]
+
+            if (pixel) {
+                setPixelColor(pixel, fill, true)
+            }
+        }
+    }
+    async function generateModifiedSVGList(path, filename){
+
+        for (let i = 0; i < palettes.length; i ++){
+            const response = await fetch(path)
+            const svgText = await response.text()
+
+            const parser = new DOMParser()
+            const svgDocument = parser.parseFromString(svgText, 'image/svg+xml')
+            const svg = svgDocument.documentElement
+            const pixels = svg.children
+            const pixelsToChange = []
+            const colorIndexes = new Map()
+
+            for (let p of pixels){
+                let c = p.getAttribute('fill')
+                if (c != pixelDefaultColor && c != '#000000'){
+                    pixelsToChange.push(p)
+                    if (!colorIndexes.has(c)){
+                        colorIndexes.set(c, colorIndexes.size)
+                    }
+                }
+            }
+
+            for (let p of pixelsToChange){
+                let ogColor = p.getAttribute('fill')
+                const paletteIndex = colorIndexes.get(ogColor)
+                p.setAttribute('fill', palettes[i][paletteIndex])
+            }
+
+            const blob = new Blob([svg.outerHTML], { type: 'image/svg+xml' })
+            const url = URL.createObjectURL(blob)
+            const download = document.createElement('a')
+            download.href = url
+            download.download = `${filename}_${i}.svg`
+            download.textContent = `Download ${filename}_${i}.svg`
+            download.style.display = 'block'
+            downloads.appendChild(download)
+            download.addEventListener('click', () => {
+                setTimeout(() => URL.revokeObjectURL(url), 1000)
+            }, { once: true })
+        }
+    }
+
+    buildGrid(gridSize)
+</script>
